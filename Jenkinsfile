@@ -29,21 +29,20 @@ pipeline {
             )
             }
         }
-         stage('Unit Test maven'){
+         stage('Integration Test maven'){
          when { expression {  params.action == 'create' } }
             steps{
-               script{
-                   
-                   mvnTest()
+               script{ 
+                   mvnIntegrationTest()
                }
             }
         }
-         stage('Build project'){
+         stage('Static Code Analysis: Sonarqube'){
          when { expression {  params.action == 'create' } }
             steps{
-               script{
-                   
-                   mvnBuildPackage()
+               script{ 
+                   def SonarQubeCredentialsId = 'sonar-cred'
+                   staticCodeAnalysis(SonarQubeCredentialsId)
                }
             }
         }
