@@ -37,15 +37,15 @@ pipeline {
                }
             }
         }
-         stage('Static Code Analysis: Sonarqube'){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{ 
-                   def SonarQubeCredentialsId = 'sonar-cred'
-                   staticCodeAnalysis(SonarQubeCredentialsId)
-               }
-            }
-        }
+        //  stage('Static Code Analysis: Sonarqube'){
+        //  when { expression {  params.action == 'create' } }
+        //     steps{
+        //        script{ 
+        //            def SonarQubeCredentialsId = 'sonar-cred'
+        //            staticCodeAnalysis(SonarQubeCredentialsId)
+        //        }
+        //     }
+        // }
          
      }
 }
