@@ -11,15 +11,17 @@ pipeline {
         string(name: 'ImageName', description: "name of the docker build", defaultValue: 'javapp')
         string(name: 'ImageTag', description: "tag of the docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "name of the Application", defaultValue: 'shivisis')
+        string(name: 'Region', description: "Region of ECR", defaultValue: 'us-east-1')
+
+    }
+    environment{
+
+        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
+        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')
+        AWS_CRED = credentials('aws-auth')
     }
      stages{
 
-        stage("Cleanup Workspace"){
-            steps{
-                cleanWs()
-            }
-
-        }
          stage('Git Checkout'){
         when { expression {  params.action == 'create' } }            
             steps{
@@ -55,22 +57,73 @@ pipeline {
         //        }
         //     }
         // }
-        //  stage('Maven build: maven'){
-        //  when { expression {  params.action == 'create' } }
-        //     steps{
-        //        script{ 
-        //           mavenBuild()
-        //        }
-        //     }
-        // }
-        // stage('Docker Image Build'){
-        //  when { expression {  params.action == 'create' } }
-        //     steps{
-        //        script{ 
-        //           dockerBuild("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-        //        }
-        //     }
-        // }
+         stage('Maven build: maven'){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{ 
+                  mavenBuild()
+               }
+            }
+        }
+        stage('Docker Image Build'){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{ 
+                  dockerBuild("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
+            }
+        }
+        stage('Docker Image Scan: trivy '){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{
+                   
+                   dockerImageScan("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
+            }
+        }
+         stage('Docker Image Push : DockerHub '){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{
+                   
+                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
+            }
+        }   
+         stage('Docker Image Cleanup : DockerHub '){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{
+                   
+                   dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
+            }
+        } 
+        stage('AWS Configure'){
+         when { expression {  params.action == 'create' } }
+            steps{   
+                withCredentials([[
+                  $class: 'AmazonWebServicesCredentialsBinding',
+                  credentialsId: 'aws-auth',
+                  accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    sh "aws ec2 describe-instances --region ${params.Region}"
+                  }
+            }
+       }   
+       stage('AWS Configure'){
+         when { expression {  params.action == 'create' } }
+            steps{   
+                withCredentials([[
+                  $class: 'AmazonWebServicesCredentialsBinding',
+                  credentialsId: 'aws-auth',
+                  accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    sh "aws ec2 describe-instances --region ${params.Region}"
+                  }
+            }
+       }   
 
          
      }
